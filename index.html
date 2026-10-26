@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b3a94">
-<title>물 고리 던지기</title>
+<title>Water Ring Toss</title>
 <style>
   /* ===== 기본 설정: 터치 시 선택/확대 방지 ===== */
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -130,32 +130,32 @@
 <div id="app">
   <div id="console">
     <div id="hud">
-      <div>⏱ <span class="v" id="time">0.0</span>초</div>
+      <div>⏱ <span class="v" id="time">0.0</span>s</div>
       <div>🎯 <span class="v" id="count">0/6</span></div>
       <div>🏆 <span class="v" id="best">--</span></div>
     </div>
     <div id="bezel"><canvas id="tank"></canvas></div>
     <div id="controls">
-      <button class="jet" id="btnL" aria-label="왼쪽 물살">물살</button>
+      <button class="jet" id="btnL" aria-label="Left jet">Jet</button>
       <div id="mid">
         <div id="dpad"></div>
-        <a id="coffee" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ 커피 한 잔</a>
+        <a id="coffee" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ Buy me a coffee</a>
       </div>
-      <button class="jet right" id="btnR" aria-label="오른쪽 물살">물살</button>
+      <button class="jet right" id="btnR" aria-label="Right jet">Jet</button>
     </div>
-    <div id="hint">폰을 기울이거나 흔들고, 버튼으로 물살을 일으켜요</div>
+    <div id="hint">Tilt or shake your phone, and press the buttons to make water jets</div>
   </div>
 </div>
 
 <!-- 시작 화면 -->
 <div class="overlay show" id="startOv">
   <div class="card">
-    <h1>🐠 물 고리 던지기</h1>
-    <p>물살로 고리를 띄워서<br><b>물고기 뿔</b>에 6개를 모두 걸어보세요!</p>
-    <p class="small">버튼 = 물살 · 기울이기 = 고리 이동 · 흔들기 = 출렁</p>
+    <h1>🐠 Water Ring Toss</h1>
+    <p>Float the rings with water jets and<br>hook all 6 onto the <b>fish horns</b>!</p>
+    <p class="small">Buttons = jets · Tilt = move rings · Shake = slosh</p>
     <div id="sensorMsg"></div>
-    <button class="big" id="startBtn">시작하기</button>
-    <p class="small" style="margin-top:14px">마음에 들었다면 ☕ 응원해 주세요</p>
+    <button class="big" id="startBtn">Start</button>
+    <p class="small" style="margin-top:14px">Enjoying it? Support the developer ☕</p>
     <a class="coffee-btn" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
   </div>
 </div>
@@ -163,12 +163,12 @@
 <!-- 클리어 화면 -->
 <div class="overlay" id="clearOv">
   <div class="card">
-    <h1>🎉 클리어!</h1>
-    <div class="time"><span id="clearTime">0.0</span>초</div>
+    <h1>🎉 Cleared!</h1>
+    <div class="time"><span id="clearTime">0.0</span>s</div>
     <p id="clearBest" class="small"></p>
-    <button class="big" id="retryBtn">다시 하기</button>
-    <p class="small" style="margin-top:14px">재미있었다면 개발자에게 커피 한 잔!</p>
-    <a class="coffee-btn" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ 커피 사주기</a>
+    <button class="big" id="retryBtn">Play again</button>
+    <p class="small" style="margin-top:14px">Had fun? Buy the developer a coffee!</p>
+    <a class="coffee-btn" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ Buy me a coffee</a>
   </div>
 </div>
 
@@ -289,7 +289,7 @@ function onMotion(e) {
   // 주소 끝에 #debug 를 붙이면 센서 값이 화면 아래 글자로 보여요 (문제 원인 찾기용)
   if (location.hash === '#debug') {
     $('hint').textContent = 'raw x=' + a.x.toFixed(2) + ' y=' + a.y.toFixed(2) +
-      ' | 중력 x=' + gx.toFixed(2) + ' y=' + gy.toFixed(2) + ' | iOS=' + IS_IOS;
+      ' | gravity x=' + gx.toFixed(2) + ' y=' + gy.toFixed(2) + ' | iOS=' + IS_IOS;
   }
 }
 
@@ -689,9 +689,9 @@ function onClear() {
   if (!best || t < best) {
     best = t;
     try { localStorage.setItem('ringToss.best', String(t)); } catch (e) {}
-    msg = '🏆 새 최고 기록이에요!';
+    msg = '🏆 New best time!';
   } else {
-    msg = '최고 기록: ' + best.toFixed(1) + '초';
+    msg = 'Best time: ' + best.toFixed(1) + 's';
   }
   showBest();
   $('clearTime').textContent = t.toFixed(1);
@@ -705,14 +705,14 @@ function onClear() {
 $('startBtn').addEventListener('click', async () => {
   const ok = await enableSensor();
   if (!ok && IS_IOS) {
-    $('sensorMsg').textContent = '센서 허용이 꺼져 있어요. 화면을 드래그해서 기울일 수 있어요.';
+    $('sensorMsg').textContent = 'Motion access is off. You can drag the screen to tilt instead.';
     await new Promise(r => setTimeout(r, 1400));
   }
   $('startOv').classList.remove('show');
   resetGame();
   // 1.5초 안에 센서 값이 안 오면 드래그/키보드 모드로 안내
   setTimeout(() => {
-    if (!hasSensor) $('hint').textContent = '센서가 없어요 → 화면을 드래그하면 기울어져요 (PC: 방향키, Z / X)';
+    if (!hasSensor) $('hint').textContent = 'No motion sensor found → drag the screen to tilt (PC: arrow keys, Z / X)';
   }, 1500);
 });
 $('retryBtn').addEventListener('click', () => {

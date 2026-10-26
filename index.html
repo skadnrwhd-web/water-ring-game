@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b3a94">
+<title>물 고리 던지기</title>
+<style>
+  /* ===== 기본 설정: 터치 시 선택/확대 방지 ===== */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: radial-gradient(circle at 50% 30%, #1b3a6b, #070d1f 70%);
+    font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: #fff; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; touch-action: none;
+  }
+  #app {
+    height: 100dvh; display: flex; align-items: center; justify-content: center;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+
+  /* 화면 너비 = 가로폭, 세로 높이에 맞춰 자동 축소 */
+  #console {
+    --w: min(86vw, 400px, calc((100dvh - 250px) * 0.6923));
+    width: calc(var(--w) + 36px);
+    padding: 12px 18px 16px;
+    border-radius: 40px 40px 56px 56px;
+    background: linear-gradient(150deg, #5db4ff 0%, #1d6fe0 38%, #0f46aa 75%, #0a2f78 100%);
+    box-shadow:
+      inset 0 4px 8px rgba(255,255,255,.55),
+      inset 0 -10px 18px rgba(0,10,70,.55),
+      inset 6px 0 10px rgba(255,255,255,.12),
+      0 26px 40px rgba(0,0,0,.55),
+      0 4px 0 #0a2a6e;
+    position: relative;
+  }
+
+  /* 상단 정보창 */
+  #hud {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 4px 6px 10px; padding: 6px 12px; border-radius: 14px;
+    background: linear-gradient(#0b1e4d, #12306e);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.35);
+    font-weight: 700; font-size: 13px; letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
+  #hud span.v { color: #ffe27a; }
+
+  /* 화면(물탱크) 테두리 */
+  #bezel {
+    width: var(--w); margin: 0 auto; border-radius: 22px; padding: 7px;
+    background: linear-gradient(145deg, #06143a, #1a3f86);
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.8), 0 2px 0 rgba(255,255,255,.4), 0 -1px 0 rgba(0,0,0,.3);
+    position: relative;
+  }
+  #tank {
+    display: block; width: 100%; aspect-ratio: 360 / 520; height: auto;
+    border-radius: 16px; background: #1f8fe0;
+  }
+
+  /* 조작부 */
+  #controls {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 14px 4px 0;
+  }
+  .jet {
+    width: 78px; height: 78px; border-radius: 50%; border: 0; padding: 0;
+    background: radial-gradient(circle at 35% 28%, #ffb4b4 0%, #ff4b5a 38%, #c4132b 80%, #8c0a1c 100%);
+    box-shadow: 0 8px 0 #7a0a1b, 0 14px 14px rgba(0,0,0,.5), inset 0 3px 4px rgba(255,255,255,.55);
+    color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    transition: transform .06s, box-shadow .06s; touch-action: none;
+  }
+  .jet.right {
+    background: radial-gradient(circle at 35% 28%, #fff1a6 0%, #ffc61a 38%, #d58a00 80%, #9a5f00 100%);
+    box-shadow: 0 8px 0 #8a5400, 0 14px 14px rgba(0,0,0,.5), inset 0 3px 4px rgba(255,255,255,.6);
+  }
+  .jet.down { transform: translateY(6px); }
+  .jet:not(.right).down { box-shadow: 0 2px 0 #7a0a1b, 0 5px 8px rgba(0,0,0,.5), inset 0 3px 4px rgba(255,255,255,.4); }
+  .jet.right.down { box-shadow: 0 2px 0 #8a5400, 0 5px 8px rgba(0,0,0,.5), inset 0 3px 4px rgba(255,255,255,.4); }
+
+  /* 가운데 장식 + 후원 */
+  #mid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  #dpad {
+    width: 52px; height: 52px; border-radius: 50%; position: relative;
+    background: radial-gradient(circle at 35% 30%, #4f95ff, #1450b8 70%, #0b2f7a);
+    box-shadow: 0 4px 0 #0a2a6e, 0 8px 8px rgba(0,0,0,.4), inset 0 2px 3px rgba(255,255,255,.5);
+  }
+  #dpad::before, #dpad::after {
+    content: ""; position: absolute; background: rgba(0,20,80,.45); border-radius: 2px;
+  }
+  #dpad::before { left: 22px; top: 10px; width: 8px; height: 32px; }
+  #dpad::after { top: 22px; left: 10px; height: 8px; width: 32px; }
+  #coffee, .coffee-btn {
+    display: inline-block; text-decoration: none; color: #3a2400; font-weight: 800; font-size: 12px;
+    padding: 7px 12px; border-radius: 999px;
+    background: linear-gradient(#ffe27a, #ffbf1f);
+    box-shadow: 0 3px 0 #a56a00, 0 6px 8px rgba(0,0,0,.4), inset 0 1px 2px rgba(255,255,255,.7);
+  }
+  #hint { text-align: center; font-size: 11px; opacity: .8; margin-top: 12px; min-height: 14px; }
+
+  /* 시작/클리어 오버레이 */
+  .overlay {
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(3, 10, 35, .72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 10; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .card {
+    width: min(92vw, 360px); text-align: center; padding: 26px 22px 22px; border-radius: 28px;
+    background: linear-gradient(150deg, #4fa6ff, #1a5fd0 55%, #0e3b92);
+    box-shadow: inset 0 3px 6px rgba(255,255,255,.5), inset 0 -8px 14px rgba(0,10,70,.5), 0 24px 40px rgba(0,0,0,.6);
+  }
+  .card h1 { margin: 0 0 6px; font-size: 28px; text-shadow: 0 3px 0 rgba(0,30,100,.6); }
+  .card p { margin: 6px 0; font-size: 14px; line-height: 1.5; opacity: .95; }
+  .big {
+    margin-top: 14px; width: 100%; border: 0; padding: 15px; border-radius: 18px;
+    font-size: 17px; font-weight: 800; color: #fff;
+    background: radial-gradient(circle at 30% 20%, #ff9aa5, #ff3b53 45%, #b50f2a);
+    box-shadow: 0 6px 0 #7a0a1b, 0 12px 14px rgba(0,0,0,.45), inset 0 2px 3px rgba(255,255,255,.5);
+  }
+  .big:active { transform: translateY(4px); box-shadow: 0 2px 0 #7a0a1b, 0 4px 6px rgba(0,0,0,.45); }
+  .time { font-size: 40px; font-weight: 900; color: #ffe27a; margin: 6px 0; font-variant-numeric: tabular-nums; }
+  .small { font-size: 12px; opacity: .85; }
+  #sensorMsg { color: #ffd27a; min-height: 16px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="console">
+    <div id="hud">
+      <div>⏱ <span class="v" id="time">0.0</span>초</div>
+      <div>🎯 <span class="v" id="count">0/6</span></div>
+      <div>🏆 <span class="v" id="best">--</span></div>
+    </div>
+    <div id="bezel"><canvas id="tank"></canvas></div>
+    <div id="controls">
+      <button class="jet" id="btnL" aria-label="왼쪽 물살">물살</button>
+      <div id="mid">
+        <div id="dpad"></div>
+        <a id="coffee" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ 커피 한 잔</a>
+      </div>
+      <button class="jet right" id="btnR" aria-label="오른쪽 물살">물살</button>
+    </div>
+    <div id="hint">폰을 기울이거나 흔들고, 버튼으로 물살을 일으켜요</div>
+  </div>
+</div>
+
+<!-- 시작 화면 -->
+<div class="overlay show" id="startOv">
+  <div class="card">
+    <h1>🐠 물 고리 던지기</h1>
+    <p>물살로 고리를 띄워서<br><b>물고기 뿔</b>에 6개를 모두 걸어보세요!</p>
+    <p class="small">버튼 = 물살 · 기울이기 = 고리 이동 · 흔들기 = 출렁</p>
+    <div id="sensorMsg"></div>
+    <button class="big" id="startBtn">시작하기</button>
+    <p class="small" style="margin-top:14px">마음에 들었다면 ☕ 응원해 주세요</p>
+    <a class="coffee-btn" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
+  </div>
+</div>
+
+<!-- 클리어 화면 -->
+<div class="overlay" id="clearOv">
+  <div class="card">
+    <h1>🎉 클리어!</h1>
+    <div class="time"><span id="clearTime">0.0</span>초</div>
+    <p id="clearBest" class="small"></p>
+    <button class="big" id="retryBtn">다시 하기</button>
+    <p class="small" style="margin-top:14px">재미있었다면 개발자에게 커피 한 잔!</p>
+    <a class="coffee-btn" href="https://buymeacoffee.com/ujnam80" target="_blank" rel="noopener">☕ 커피 사주기</a>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   기본 상수 (숫자를 바꾸면 게임 느낌이 달라져요)
+   ===================================================================== */
+const W = 360, H = 520;        // 물탱크 내부 좌표 크기
+const GRAV = 420;              // 중력 세기 (클수록 고리가 빨리 가라앉음)
+const DRAG = 2.6;              // 물 저항 (클수록 느릿느릿)
+const JET = 1500;              // 물살 세기
+const RING_R = 17;             // 고리 겉보기 반지름
+const COL_R = 15;              // 충돌 계산용 반지름
+const N_RINGS = 6;             // 고리 개수
+const PEG_CAP = 3;             // 막대 하나에 걸 수 있는 최대 개수
+const FLOOR = H - 30;          // 모래 바닥 높이
+
+/* 고리/물고기 색상 팔레트 (c=기본, l=밝은색, d=어두운색) */
+const PALETTE = [
+  { c: '#ff4d57', l: '#ffa3a8', d: '#a9122a' },
+  { c: '#ffcf33', l: '#fff3a8', d: '#c28300' },
+  { c: '#34d27b', l: '#a6f7c8', d: '#117c44' },
+  { c: '#a96bff', l: '#ddc2ff', d: '#6428c0' },
+  { c: '#ff9a3c', l: '#ffd5a8', d: '#bd5500' },
+  { c: '#ff7eb6', l: '#ffc7de', d: '#bb3a78' },
+];
+
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/* =====================================================================
+   화면 요소 / 캔버스 준비
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const cv = $('tank');
+const ctx = cv.getContext('2d');
+let dpr = 1;
+function resizeCanvas() {
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+}
+resizeCanvas();
+
+/* =====================================================================
+   게임 상태
+   ===================================================================== */
+let state = 'ready';           // ready(대기) / play(진행) / clear(클리어)
+let started = false;           // 첫 물살을 눌렀는지 (타이머 시작 기준)
+let t0 = 0, elapsed = 0;       // 시간 측정
+let clearTimer = 0;
+let rings = [], bubbles = [];
+let grav = { x: 0, y: 1 };     // 현재 중력 방향 (부드럽게 따라감)
+let gTarget = { x: 0, y: 1 };  // 센서가 알려준 목표 중력 방향
+let hasSensor = false;
+
+/* 물살 버튼 2개 (물이 나오는 위치 x) */
+const jets = [ { x: 95, pressed: false }, { x: 265, pressed: false } ];
+
+/* 막대(물고기 뿔) 3개: x,y는 막대 끝, dir은 물고기 몸 방향 */
+const pegs = [
+  { x: 62,  y: 118, dir:  1, col: PALETTE[4], hooks: [] },
+  { x: 180, y: 70,  dir:  1, col: PALETTE[2], hooks: [] },
+  { x: 298, y: 118, dir: -1, col: PALETTE[3], hooks: [] },
+];
+
+/* 바위(움직이지 않는 장애물) */
+const rocks = [
+  { x: 180, y: 365, r: 27 },
+  { x: 58,  y: 300, r: 15 },
+  { x: 302, y: 300, r: 15 },
+];
+
+/* 최고 기록 (폰에 저장) */
+let best = null;
+try { const b = localStorage.getItem('ringToss.best'); if (b) best = parseFloat(b); } catch (e) {}
+function showBest() { $('best').textContent = best ? best.toFixed(1) : '--'; }
+showBest();
+
+/* =====================================================================
+   게임 시작/초기화
+   ===================================================================== */
+function resetGame() {
+  rings = [];
+  for (const p of pegs) p.hooks = [];
+  for (let i = 0; i < N_RINGS; i++) {
+    rings.push({
+      x: 50 + i * 52 + (Math.random() - .5) * 8,
+      y: FLOOR - 24 - (i % 2) * 26,
+      vx: 0, vy: 0, col: PALETTE[i % PALETTE.length],
+      hook: null, slot: 0,
+    });
+  }
+  started = false; elapsed = 0;
+  $('time').textContent = '0.0';
+  $('count').textContent = '0/' + N_RINGS;
+  state = 'play';
+}
+
+/* =====================================================================
+   센서 (아이폰: 기울기 + 흔들기)
+   중력 방향 = 폰이 느끼는 가속도. 흔들면 가속도가 커져서
+   자동으로 고리가 출렁이는 효과가 나요.
+   ===================================================================== */
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null || a.y == null) return;
+  hasSensor = true;
+  const s = IS_IOS ? -1 : 1;          // 아이폰은 부호가 반대
+  let gx = -s * a.x / 9.81;
+  let gy =  s * a.y / 9.81;
+  const m = Math.hypot(gx, gy);
+  if (m > 2.6) { gx *= 2.6 / m; gy *= 2.6 / m; }   // 너무 세게 흔들어도 상한
+  gTarget.x = gx; gTarget.y = gy;
+  // 주소 끝에 #debug 를 붙이면 센서 값이 화면 아래 글자로 보여요 (문제 원인 찾기용)
+  if (location.hash === '#debug') {
+    $('hint').textContent = 'raw x=' + a.x.toFixed(2) + ' y=' + a.y.toFixed(2) +
+      ' | 중력 x=' + gx.toFixed(2) + ' y=' + gy.toFixed(2) + ' | iOS=' + IS_IOS;
+  }
+}
+
+async function enableSensor() {
+  try {
+    if (typeof DeviceMotionEvent !== 'undefined' &&
+        typeof DeviceMotionEvent.requestPermission === 'function') {
+      const res = await DeviceMotionEvent.requestPermission();   // 아이폰 허용창
+      if (res !== 'granted') return false;
+    }
+    window.addEventListener('devicemotion', onMotion);
+    return true;
+  } catch (err) { return false; }
+}
+
+/* 센서가 없을 때: 화면 드래그 / 방향키로 기울이기 */
+let dragging = false;
+cv.addEventListener('pointerdown', e => { dragging = true; dragTilt(e); });
+cv.addEventListener('pointermove', e => { if (dragging) dragTilt(e); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(n =>
+  cv.addEventListener(n, () => { dragging = false; if (!hasSensor) { gTarget.x = 0; gTarget.y = 1; } }));
+function dragTilt(e) {
+  if (hasSensor) return;
+  const r = cv.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width - 0.5;
+  const py = (e.clientY - r.top) / r.height - 0.5;
+  gTarget.x = Math.max(-1.6, Math.min(1.6, px * 3.2));
+  gTarget.y = Math.max(-1.6, Math.min(1.6, py * 3.2 + 0.4));
+}
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === 'z' || e.key === 'Z') setJet(0, true);
+  if (e.key === 'x' || e.key === 'X') setJet(1, true);
+  keyTilt();
+});
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+  if (e.key === 'z' || e.key === 'Z') setJet(0, false);
+  if (e.key === 'x' || e.key === 'X') setJet(1, false);
+  keyTilt();
+});
+function keyTilt() {
+  if (hasSensor) return;
+  let x = 0, y = 1;
+  if (keys['ArrowLeft']) x -= 1.2;
+  if (keys['ArrowRight']) x += 1.2;
+  if (keys['ArrowUp']) y -= 1.6;
+  if (keys['ArrowDown']) y += 0.8;
+  gTarget.x = x; gTarget.y = y;
+}
+
+/* =====================================================================
+   물살 버튼
+   ===================================================================== */
+function setJet(i, on) {
+  jets[i].pressed = on;
+  (i === 0 ? $('btnL') : $('btnR')).classList.toggle('down', on);
+  if (on && state === 'play' && !started) { started = true; t0 = performance.now(); }
+}
+function bindJet(btn, i) {
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.setPointerCapture?.(e.pointerId); setJet(i, true); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n =>
+    btn.addEventListener(n, () => setJet(i, false)));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+}
+bindJet($('btnL'), 0);
+bindJet($('btnR'), 1);
+
+/* =====================================================================
+   물리 계산 (한 걸음)
+   ===================================================================== */
+function step(dt) {
+  for (const r of rings) {
+    /* 막대에 걸린 고리: 막대 주변에서 스프링처럼 흔들림 */
+    if (r.hook) {
+      const p = r.hook;
+      const tx = p.x + grav.x * 4;
+      const ty = p.y + 16 + r.slot * 11 + Math.min(grav.y, 1.5) * 1.5;
+      r.vx += ((tx - r.x) * 90 - r.vx * 9) * dt;
+      r.vy += ((ty - r.y) * 90 - r.vy * 9) * dt;
+      r.x += r.vx * dt; r.y += r.vy * dt;
+      continue;
+    }
+
+    /* 중력(기울기 방향) */
+    let ax = grav.x * GRAV;
+    let ay = grav.y * GRAV;
+
+    /* 물살: 노즐 위쪽 부채꼴 영역에서 위로 밀어 올림 */
+    for (const j of jets) {
+      if (!j.pressed) continue;
+      const h = FLOOR - r.y;                 // 노즐 위 높이
+      const dx = r.x - j.x;
+      const w = 26 + Math.max(h, 0) * 0.10;  // 위로 갈수록 넓어지는 폭
+      if (h > -24 && h < 470 && Math.abs(dx) < w) {
+        // 높이에 따라 약해지되, 맨 위 막대까지는 닿도록 최소 힘을 유지
+        const f = (1 - Math.max(h, 0) / 800) * (1 - Math.abs(dx) / w * 0.6);
+        ay -= JET * f;
+        ax += -dx * 6 * f + (Math.random() - 0.5) * 520 * f;   // 가운데로 모으며 살짝 흔들기
+      }
+    }
+
+    r.vx += ax * dt; r.vy += ay * dt;
+    const d = Math.exp(-DRAG * dt);          // 물 저항
+    r.vx *= d; r.vy *= d;
+    r.x += r.vx * dt; r.y += r.vy * dt;
+  }
+
+  /* 충돌: 벽, 바닥, 바위, 고리끼리 */
+  const minX = RING_R + 8, maxX = W - RING_R - 8;
+  const minY = RING_R + 8, maxY = FLOOR - 6;
+  for (const r of rings) {
+    if (r.hook) continue;
+    if (r.x < minX) { r.x = minX; r.vx = Math.abs(r.vx) * 0.35; }
+    if (r.x > maxX) { r.x = maxX; r.vx = -Math.abs(r.vx) * 0.35; }
+    if (r.y < minY) { r.y = minY; r.vy = Math.abs(r.vy) * 0.35; }
+    if (r.y > maxY) { r.y = maxY; r.vy = -Math.abs(r.vy) * 0.25; }
+    for (const k of rocks) {
+      const dx = r.x - k.x, dy = r.y - k.y;
+      const dist = Math.hypot(dx, dy), min = k.r + COL_R;
+      if (dist < min && dist > 0.001) {
+        const nx = dx / dist, ny = dy / dist;
+        r.x = k.x + nx * min; r.y = k.y + ny * min;
+        const vn = r.vx * nx + r.vy * ny;
+        if (vn < 0) { r.vx -= 1.5 * vn * nx; r.vy -= 1.5 * vn * ny; }
+      }
+    }
+  }
+  for (let i = 0; i < rings.length; i++) {
+    for (let j = i + 1; j < rings.length; j++) {
+      const a = rings[i], b = rings[j];
+      if (a.hook || b.hook) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy), min = COL_R * 2;
+      if (dist < min && dist > 0.001) {
+        const nx = dx / dist, ny = dy / dist, push = (min - dist) / 2;
+        a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+        const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (rv < 0) {
+          const imp = -rv * 0.6;
+          a.vx -= imp * nx; a.vy -= imp * ny; b.vx += imp * nx; b.vy += imp * ny;
+        }
+      }
+    }
+  }
+
+  /* 막대 끝을 지나면 걸림 판정 */
+  for (const r of rings) {
+    if (r.hook) continue;
+    for (const p of pegs) {
+      if (p.hooks.length >= PEG_CAP) continue;
+      if (Math.abs(r.x - p.x) < 9 && Math.abs(r.y - (p.y + 6)) < 11) {
+        r.hook = p; r.slot = p.hooks.length; p.hooks.push(r);
+        r.vx *= 0.3; r.vy *= 0.3;
+        for (let k = 0; k < 6; k++) addBubble(p.x, p.y + 6, 1.6);
+        break;
+      }
+    }
+  }
+}
+
+/* 거품 (눈요기용) */
+function addBubble(x, y, spread) {
+  bubbles.push({ x: x + (Math.random() - .5) * 10, y, r: 1.5 + Math.random() * 3,
+                 vy: -(30 + Math.random() * 60), vx: (Math.random() - .5) * 30 * (spread || 1), life: 1 });
+}
+
+/* =====================================================================
+   그리기 도구들
+   ===================================================================== */
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+/* 물고기 (막대 달린 큰 물고기 + 배경 작은 물고기 공용) */
+function drawFish(x, y, rx, ry, col, dir) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(dir, 1);
+  // 꼬리
+  ctx.beginPath(); ctx.moveTo(-rx * .75, 0); ctx.lineTo(-rx * 1.55, -ry * 1.0);
+  ctx.quadraticCurveTo(-rx * 1.25, 0, -rx * 1.55, ry * 1.0); ctx.closePath();
+  ctx.fillStyle = col.d; ctx.fill();
+  // 등지느러미
+  ctx.beginPath(); ctx.moveTo(-rx * .2, -ry * .8); ctx.quadraticCurveTo(0, -ry * 1.7, rx * .4, -ry * .85);
+  ctx.closePath(); ctx.fillStyle = col.d; ctx.fill();
+  // 몸통 (입체감 그라디언트)
+  const g = ctx.createRadialGradient(-rx * .2, -ry * .55, ry * .2, 0, 0, rx * 1.15);
+  g.addColorStop(0, col.l); g.addColorStop(.45, col.c); g.addColorStop(1, col.d);
+  ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+  // 배 쪽 밝은 줄무늬
+  ctx.beginPath(); ctx.ellipse(rx * .05, ry * .45, rx * .75, ry * .32, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fill();
+  // 눈
+  ctx.beginPath(); ctx.arc(rx * .55, -ry * .18, ry * .32, 0, 7); ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(rx * .6, -ry * .15, ry * .16, 0, 7); ctx.fillStyle = '#12213f'; ctx.fill();
+  ctx.restore();
+}
+
+/* 자유롭게 떠다니는 고리 (정면에서 본 모습) */
+function drawRing(x, y, col) {
+  ctx.save(); ctx.translate(x, y);
+  // 그림자
+  ctx.beginPath(); ctx.arc(2.5, 3.5, RING_R, 0, 7);
+  ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(0,30,90,.32)'; ctx.stroke();
+  // 몸통
+  const g = ctx.createLinearGradient(-RING_R, -RING_R, RING_R, RING_R);
+  g.addColorStop(0, col.l); g.addColorStop(.45, col.c); g.addColorStop(1, col.d);
+  ctx.beginPath(); ctx.arc(0, 0, RING_R, 0, Math.PI * 2);
+  ctx.lineWidth = 7; ctx.strokeStyle = g; ctx.stroke();
+  // 안쪽 어두운 선, 바깥 반사광
+  ctx.beginPath(); ctx.arc(0, 0, RING_R - 3.2, 0, 7);
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, RING_R + 1.2, Math.PI * 1.08, Math.PI * 1.52);
+  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.stroke();
+  ctx.restore();
+}
+
+/* 막대에 걸린 고리: 뒤쪽 반 / 앞쪽 반으로 나눠 그려서 막대를 감싼 느낌 */
+function drawHooked(r, half) {
+  const rx = 17, ry = 6.5;
+  ctx.save(); ctx.translate(r.x, r.y);
+  const g = ctx.createLinearGradient(-rx, 0, rx, 0);
+  g.addColorStop(0, r.col.d); g.addColorStop(.35, r.col.l); g.addColorStop(.7, r.col.c); g.addColorStop(1, r.col.d);
+  ctx.lineWidth = 6; ctx.strokeStyle = g; ctx.lineCap = 'butt';
+  ctx.beginPath();
+  if (half === 'back') ctx.ellipse(0, 0, rx, ry, 0, Math.PI, Math.PI * 2);
+  else ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRock(k) {
+  const g = ctx.createRadialGradient(k.x - k.r * .4, k.y - k.r * .5, k.r * .15, k.x, k.y, k.r * 1.1);
+  g.addColorStop(0, '#d7e6f5'); g.addColorStop(.5, '#7d97b8'); g.addColorStop(1, '#3a4d73');
+  ctx.beginPath(); ctx.ellipse(k.x + 3, k.y + 5, k.r * 1.05, k.r * .95, 0, 0, 7);
+  ctx.fillStyle = 'rgba(0,25,80,.3)'; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(k.x, k.y, k.r * 1.05, k.r * .92, -.2, 0, 7);
+  ctx.fillStyle = g; ctx.fill();
+}
+
+function drawSeaweed(x, base, h, t, col) {
+  const sway = Math.sin(t * 1.4 + x) * 5 + grav.x * 10;
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath(); ctx.moveTo(x + i * 6, base);
+    ctx.bezierCurveTo(x + i * 6 + sway, base - h * .4, x + i * 6 - sway, base - h * .75, x + i * 6 + sway * 1.3, base - h * (1 - Math.abs(i) * .15));
+    ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.stroke();
+  }
+}
+
+/* 배경 장식용 작은 물고기들 */
+const deco = [
+  { x: 60, y: 210, s: .8, col: PALETTE[1], sp: 14 },
+  { x: 240, y: 190, s: 1.0, col: PALETTE[5], sp: -10 },
+  { x: 150, y: 430, s: .7, col: PALETTE[0], sp: 9 },
+];
+
+/* =====================================================================
+   장면 그리기
+   ===================================================================== */
+function render(t) {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // 물 배경 (위: 밝음 → 아래: 깊은 파랑)
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#74dcff'); bg.addColorStop(.5, '#2597e8'); bg.addColorStop(1, '#0a4aa6');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  // 빛줄기 (기울기에 따라 살짝 이동)
+  ctx.save();
+  for (let i = 0; i < 4; i++) {
+    const bx = 40 + i * 95 + Math.sin(t * .4 + i) * 12 + grav.x * 18;
+    ctx.beginPath(); ctx.moveTo(bx, 0); ctx.lineTo(bx + 46, 0); ctx.lineTo(bx + 120, H); ctx.lineTo(bx + 40, H);
+    ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,.055)'; ctx.fill();
+  }
+  ctx.restore();
+
+  // 모래 바닥
+  ctx.beginPath(); ctx.moveTo(0, H);
+  for (let x = 0; x <= W; x += 20) ctx.lineTo(x, FLOOR + 4 + Math.sin(x * .05) * 4);
+  ctx.lineTo(W, H); ctx.closePath();
+  const sand = ctx.createLinearGradient(0, FLOOR, 0, H);
+  sand.addColorStop(0, '#ffe9a6'); sand.addColorStop(1, '#d9a94f');
+  ctx.fillStyle = sand; ctx.fill();
+
+  // 해초
+  drawSeaweed(24, FLOOR + 8, 90, t, '#1fa56a');
+  drawSeaweed(338, FLOOR + 8, 110, t, '#1a9a62');
+  drawSeaweed(130, FLOOR + 10, 60, t + 1, '#2bbb78');
+  drawSeaweed(236, FLOOR + 10, 70, t + 2, '#2bbb78');
+
+  // 배경 물고기
+  for (const f of deco) {
+    f.x += (f.sp + grav.x * 14) * 0.016;
+    if (f.x > W + 60) f.x = -60; if (f.x < -60) f.x = W + 60;
+    drawFish(f.x, f.y + Math.sin(t + f.x * .02) * 6, 14 * f.s, 8 * f.s, f.col, f.sp >= 0 ? 1 : -1);
+  }
+
+  // 바위
+  for (const k of rocks) drawRock(k);
+
+  // 노즐 + 물살 표시
+  for (const j of jets) {
+    ctx.beginPath(); ctx.ellipse(j.x, FLOOR + 2, 20, 7, 0, 0, 7);
+    const ng = ctx.createLinearGradient(j.x - 20, 0, j.x + 20, 0);
+    ng.addColorStop(0, '#2d4a7a'); ng.addColorStop(.5, '#9ec4f0'); ng.addColorStop(1, '#2d4a7a');
+    ctx.fillStyle = ng; ctx.fill();
+    if (j.pressed) {
+      const jg = ctx.createLinearGradient(0, FLOOR, 0, FLOOR - 300);
+      jg.addColorStop(0, 'rgba(255,255,255,.38)'); jg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.beginPath(); ctx.moveTo(j.x - 16, FLOOR); ctx.lineTo(j.x + 16, FLOOR);
+      ctx.lineTo(j.x + 56, FLOOR - 300); ctx.lineTo(j.x - 56, FLOOR - 300); ctx.closePath();
+      ctx.fillStyle = jg; ctx.fill();
+    }
+  }
+
+  // 막대 달린 물고기 + 걸린 고리 (뒤쪽 반 → 막대 → 앞쪽 반)
+  for (const p of pegs) {
+    drawFish(p.x - p.dir * 22, p.y + 66, 28, 16, p.col, p.dir);
+    for (const r of p.hooks) drawHooked(r, 'back');
+    const rod = ctx.createLinearGradient(p.x - 4, 0, p.x + 4, 0);
+    rod.addColorStop(0, '#9a7a3a'); rod.addColorStop(.4, '#fff2c2'); rod.addColorStop(1, '#8a6a2a');
+    ctx.fillStyle = rod; rr(p.x - 3.5, p.y, 7, 62, 3); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4.2, 0, 7); ctx.fillStyle = '#ffe9a0'; ctx.fill();
+    for (const r of p.hooks) drawHooked(r, 'front');
+  }
+
+  // 떠다니는 고리
+  for (const r of rings) if (!r.hook) drawRing(r.x, r.y, r.col);
+
+  // 거품
+  for (const b of bubbles) {
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7);
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.18 * b.life) + ')'; ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,' + (0.7 * b.life) + ')'; ctx.stroke();
+  }
+
+  // 유리 반사 (기울기에 따라 이동) + 안쪽 그림자로 입체감
+  const gl = ctx.createLinearGradient(0, 0, W, H * .6);
+  const off = grav.x * 0.12;
+  gl.addColorStop(0, 'rgba(255,255,255,.34)');
+  gl.addColorStop(Math.max(.05, .22 + off), 'rgba(255,255,255,.05)');
+  gl.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H);
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .75);
+  vg.addColorStop(0, 'rgba(0,20,80,0)'); vg.addColorStop(1, 'rgba(0,20,80,.38)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  ctx.beginPath(); ctx.ellipse(W * .3, 22, 90, 10, -.05, 0, 7);
+  ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fill();
+}
+
+/* =====================================================================
+   메인 반복
+   ===================================================================== */
+let last = performance.now();
+function frame(now) {
+  let dt = (now - last) / 1000; last = now;
+  if (dt > 1 / 20) dt = 1 / 20;                  // 탭 전환 등으로 끊겼을 때 보호
+
+  // 중력 방향을 부드럽게 따라가기
+  grav.x += (gTarget.x - grav.x) * 0.35;
+  grav.y += (gTarget.y - grav.y) * 0.35;
+
+  if (state === 'play' || state === 'clear') {
+    const sub = 3;                               // 3번 쪼개서 계산하면 더 안정적
+    for (let i = 0; i < sub; i++) step(dt / sub);
+  }
+
+  // 물살 거품 생성, 거품 이동
+  for (const j of jets) if (j.pressed && Math.random() < 0.8) addBubble(j.x, FLOOR - 4, 1);
+  if (Math.random() < 0.05) addBubble(20 + Math.random() * (W - 40), FLOOR - 6, 0.5);
+  for (const b of bubbles) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt * 0.35; }
+  bubbles = bubbles.filter(b => b.life > 0 && b.y > -10);
+
+  // 시간/개수 표시와 클리어 판정
+  if (state === 'play') {
+    if (started) elapsed = (performance.now() - t0) / 1000;
+    $('time').textContent = elapsed.toFixed(1);
+    const n = rings.filter(r => r.hook).length;
+    $('count').textContent = n + '/' + N_RINGS;
+    if (n === N_RINGS) onClear();
+  }
+
+  render(now / 1000);
+  requestAnimationFrame(frame);
+}
+
+/* =====================================================================
+   클리어 처리
+   ===================================================================== */
+function onClear() {
+  state = 'clear';
+  const t = elapsed;
+  let msg;
+  if (!best || t < best) {
+    best = t;
+    try { localStorage.setItem('ringToss.best', String(t)); } catch (e) {}
+    msg = '🏆 새 최고 기록이에요!';
+  } else {
+    msg = '최고 기록: ' + best.toFixed(1) + '초';
+  }
+  showBest();
+  $('clearTime').textContent = t.toFixed(1);
+  $('clearBest').textContent = msg;
+  clearTimer = setTimeout(() => $('clearOv').classList.add('show'), 900);
+}
+
+/* =====================================================================
+   버튼 연결
+   ===================================================================== */
+$('startBtn').addEventListener('click', async () => {
+  const ok = await enableSensor();
+  if (!ok && IS_IOS) {
+    $('sensorMsg').textContent = '센서 허용이 꺼져 있어요. 화면을 드래그해서 기울일 수 있어요.';
+    await new Promise(r => setTimeout(r, 1400));
+  }
+  $('startOv').classList.remove('show');
+  resetGame();
+  // 1.5초 안에 센서 값이 안 오면 드래그/키보드 모드로 안내
+  setTimeout(() => {
+    if (!hasSensor) $('hint').textContent = '센서가 없어요 → 화면을 드래그하면 기울어져요 (PC: 방향키, Z / X)';
+  }, 1500);
+});
+$('retryBtn').addEventListener('click', () => {
+  clearTimeout(clearTimer);
+  $('clearOv').classList.remove('show');
+  resetGame();
+});
+
+// 시작 전에도 장면이 보이도록 고리 미리 배치
+resetGame(); state = 'ready';
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

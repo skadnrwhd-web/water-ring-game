@@ -167,7 +167,7 @@ window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key.toLowerCase()===
 window.addEventListener('keyup',e=>{keys[e.key]=false;if(e.key.toLowerCase()==='z')setJet(0,false);if(e.key.toLowerCase()==='x')setJet(1,false);keyTilt()});
 function keyTilt(){if(hasSensor)return;let x=0,y=1;if(keys.ArrowLeft)x-=1.2;if(keys.ArrowRight)x+=1.2;if(keys.ArrowUp)y-=1.6;if(keys.ArrowDown)y+=.8;target={x,y}}
 $('tilt').addEventListener('click',()=>{target={x:0,y:1};grav={x:0,y:1}});
-$('startBtn').addEventListener('click',async()=>{const ok=await enableSensor();if(!ok&&/iPhone|iPad|iPod/.test(navigator.userAgent))$('sensorMsg').textContent='센서 권한이 없어도 화면 드래그로 플레이할 수 있어요.';$('start').classList.add('hidden');resetGame()});
+$('startBtn').addEventListener('click',()=>{$('start').classList.add('hidden');resetGame();enableSensor().then(ok=>{if(!ok&&/iPhone|iPad|iPod/.test(navigator.userAgent))$('hint').textContent='센서 없이 화면을 드래그해 기울이고, 물살 버튼을 길게 누르세요.'}).catch(()=>{});});
 $('retry').addEventListener('click',()=>{$('clear').classList.add('hidden');resetGame()});
 
 function step(dt){

@@ -71,7 +71,7 @@ let rings=[],score=0,time=60,playing=false,aimX=0,aimZ=-1.1,last=0,spawnWait=0,b
 document.querySelector('#best').textContent=String(best).padStart(3,'0');
 const scoreEl=document.querySelector('#score'),timeEl=document.querySelector('#time'),hint=document.querySelector('#hint');
 function updateHud(){scoreEl.textContent=String(score).padStart(3,'0');timeEl.textContent=String(Math.ceil(time)).padStart(2,'0');document.querySelector('#best').textContent=String(best).padStart(3,'0')}
-function addRing(){const r=makeRing(ringColors[Math.floor(Math.random()*ringColors.length)]);r.position.set(aimX,.75,3.2);r.rotation.x=Math.PI/2;r.userData.flight=true;r.userData.velocity.set((aimX-r.position.x)*.3,4.3,-7.4);r.userData.life=0;scene.add(r);rings.push(r);hint.textContent='링 발사! 기둥에 걸리도록 조준해 보세요.'}
+function addRing(){const r=makeRing(ringColors[Math.floor(Math.random()*ringColors.length)]);r.position.set(aimX,.75,3.2);r.rotation.x=Math.PI/2;r.userData.flight=true;r.userData.velocity.set((aimX-r.position.x)*.3,2.5,-7.4);r.userData.life=0;scene.add(r);rings.push(r);hint.textContent='링 발사! 기둥에 걸리도록 조준해 보세요.'}
 function launch(){if(!playing)return;addRing()}
 function start(){score=0;time=60;playing=true;document.querySelector('#intro').style.display='none';rings.forEach(r=>scene.remove(r));rings=[];updateHud();hint.textContent='화면을 좌우로 움직여 조준하고 링 발사 버튼을 누르세요.';last=performance.now()}
 document.querySelector('#start').addEventListener('click',start);document.querySelector('#reset').addEventListener('click',()=>{document.querySelector('#intro').style.display='flex';start();document.querySelector('#intro').style.display='flex';playing=false});document.querySelector('#launch').addEventListener('click',launch);

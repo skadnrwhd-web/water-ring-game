@@ -124,9 +124,9 @@ const rimLight=new THREE.PointLight(0x24cfff,42,18);rimLight.position.set(4,6,-2
 const fillLight=new THREE.PointLight(0xffe2a1,22,15);fillLight.position.set(-4,2,4);scene.add(fillLight);
 
 const mat=(color,roughness=.3,metalness=.05,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
-const glass=new THREE.MeshPhysicalMaterial({color:0x9cecff,transparent:true,opacity:.055,roughness:.08,metalness:.05,side:THREE.DoubleSide,depthWrite:false});
-const edgeGlass=new THREE.MeshPhysicalMaterial({color:0x5ee5ff,transparent:true,opacity:.62,roughness:.12,metalness:.12});
-const blue=mat(0x078de0,.2,.24), darkBlue=mat(0x07528d,.28,.18), sand=mat(0xffdf9a,.92), rockMat=mat(0x617f92,.72), gold=mat(0xffd78a,.25,.55);
+const glass=new THREE.MeshPhysicalMaterial({color:0xd8f8ff,transparent:true,opacity:.12,roughness:.035,metalness:.02,side:THREE.DoubleSide,depthWrite:false,clearcoat:1,clearcoatRoughness:.03});
+const edgeGlass=new THREE.MeshPhysicalMaterial({color:0xc8f5ff,transparent:true,opacity:.30,roughness:.045,metalness:.08,side:THREE.DoubleSide,depthWrite:false,clearcoat:1,clearcoatRoughness:.025});
+const blue=mat(0x7bbbd0,.18,.28), darkBlue=mat(0x17465c,.22,.22), sand=mat(0xffdf9a,.92), rockMat=mat(0x617f92,.72), gold=mat(0xffd78a,.25,.55);
 const world={w:6.8,h:9.3,floor:.52,minX:-3.0,maxX:3.0,minY:.8,maxY:8.65};
 const tank=new THREE.Group();scene.add(tank);
 // Rounded aquarium silhouette inspired by the bright 3D concept render.
@@ -153,24 +153,24 @@ function box(parent,x,y,z,sx,sy,sz,material,opts={}){const m=new THREE.Mesh(new 
 function cylinder(parent,x,y,z,r1,r2,h,material,segments=24){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function sphere(parent,x,y,z,r,material,scale=[1,1,1]){const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),material);m.position.set(x,y,z);m.scale.set(...scale);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 
-// Chunky polished console base and transparent aquarium
-box(tank,0,4.6,-1.75,7.35,9.9,.32,darkBlue);
-box(tank,0,.12,0,7.15,.52,3.35,blue);
-box(tank,-3.48,4.6,0,.16,9.1,3.25,edgeGlass);
-box(tank,3.48,4.6,0,.16,9.1,3.25,edgeGlass);
-box(tank,0,9.14,0,7.05,.15,3.25,edgeGlass);
-box(tank,0,4.62,-1.57,6.9,8.95,.08,glass);
-box(tank,0,4.62,1.55,6.9,8.95,.08,glass);
-box(tank,0,.54,0,6.85,.14,3.0,sand);
+// Premium clear-acrylic aquarium: slim transparent walls and a restrained satin-metal base.
+box(tank,0,4.6,-1.75,7.12,9.72,.10,glass);
+box(tank,0,.12,0,7.08,.34,3.28,blue);
+box(tank,-3.48,4.6,0,.075,9.05,3.20,edgeGlass);
+box(tank,3.48,4.6,0,.075,9.05,3.20,edgeGlass);
+box(tank,0,9.14,0,7.02,.075,3.20,edgeGlass);
+box(tank,0,4.62,-1.57,6.9,8.95,.035,glass);
+box(tank,0,4.62,1.55,6.9,8.95,.035,glass);
+box(tank,0,.48,0,6.88,.10,3.0,sand);
 for(let i=0;i<11;i++){const x=-3.1+i*.62;const peb=sphere(tank,x,.65,(i%3-1)*.72,.09,mat(i%2?0xc7a76a:0xf5dda0,.9));peb.scale.set(1,.35,.8)}
-// Bright rounded outline rails: the distinctive curved aquarium rim and base.
-const rimMaterial=new THREE.MeshStandardMaterial({color:0x5be5ff,metalness:.38,roughness:.18,emissive:0x087eae,emissiveIntensity:.35});
-roundedRail(tank,7.12,8.95,.48,4.62,1.62,rimMaterial,.085);
-roundedRail(tank,7.12,8.95,.48,4.62,-1.62,rimMaterial,.055);
-roundedRail(tank,7.22,.52,.22,.36,0,mat(0x21bfff,.22,.3),.11);
-roundedRail(tank,7.18,.48,.22,8.98,0,mat(0x39cfff,.18,.32),.12);
-// Inner seams and reflective vertical rails
-for(const x of [-3.39,3.39]){cylinder(tank,x,4.6,1.36,.045,.045,8.9,edgeGlass,12)}
+// Fine polished acrylic edges: subtle highlights instead of a chunky toy-like frame.
+const rimMaterial=new THREE.MeshPhysicalMaterial({color:0xe0fbff,metalness:.22,roughness:.08,transparent:true,opacity:.72,clearcoat:1,clearcoatRoughness:.02});
+roundedRail(tank,7.12,8.95,.52,4.62,1.62,rimMaterial,.035);
+roundedRail(tank,7.12,8.95,.52,4.62,-1.62,rimMaterial,.028);
+roundedRail(tank,7.12,.34,.18,.30,0,mat(0x79b9cc,.2,.38),.055);
+roundedRail(tank,7.12,.30,.18,8.99,0,rimMaterial,.045);
+// Narrow reflective vertical seams at the acrylic corners
+for(const x of [-3.43,3.43]){cylinder(tank,x,4.6,1.43,.022,.022,8.9,edgeGlass,12)}
 // Floating light shafts
 const rayMat=new THREE.MeshBasicMaterial({color:0x8ceeff,transparent:true,opacity:.055,side:THREE.DoubleSide,depthWrite:false});
 for(let i=0;i<5;i++){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.8+i*1.35,8.9,-1.25),new THREE.Vector3(-2.35+i*1.35,8.9,-1.25),new THREE.Vector3(-.8+i*1.35,.8,-1.25),new THREE.Vector3(-1.6+i*1.35,.8,-1.25)]);g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();scene.add(new THREE.Mesh(g,rayMat))}

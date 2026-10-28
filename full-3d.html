@@ -64,7 +64,7 @@ body { -webkit-touch-callout:none; }
  <p>실제 3D 수조 속에서 고리 6개를 물살로 띄워 물고기 뿔에 모두 거세요.</p>
  <div class="pills"><span>6개의 고리</span><span>2개의 물살 버튼</span><span>3개의 기둥</span></div>
  <p>버튼을 누르고 있으면 물이 위로 솟아오릅니다. 기울기와 흔들림을 이용해 고리를 움직이세요.</p>
- <div id="sensorMsg"></div><button class="primary" id="startBtn">게임 시작</button><div class="note">PC: 방향키로 기울기 · Z / X로 물살 · 화면 드래그도 가능</div>
+ <div id="sensorMsg" role="status" aria-live="polite"></div><button class="primary" id="startBtn" type="button" onclick="if(!window.__ringGameStarted){this.textContent='게임 준비 중…';document.getElementById('sensorMsg').textContent='3D 엔진을 연결하고 있습니다.'}">게임 시작</button><div class="note">PC: 방향키로 기울기 · Z / X로 물살 · 화면 드래그도 가능</div>
  </div>
 </div>
 <div class="overlay hidden" id="clear">
@@ -84,7 +84,7 @@ window.addEventListener('unhandledrejection', function(e) {
 });
 </script>
 <script type="module">
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+let THREE;\ntry { THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'); }\ncatch (firstError) { try { THREE = await import('https://unpkg.com/three@0.160.0/build/three.module.js'); } catch (secondError) { const msg=document.getElementById('sensorMsg'); if(msg) msg.textContent='3D 엔진을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.'; const btn=document.getElementById('startBtn'); if(btn) { btn.textContent='새로고침'; btn.onclick=()=>location.reload(); } throw secondError; } }
 
 const $=id=>document.getElementById(id);
 const canvas=$('scene');
@@ -214,7 +214,7 @@ window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key.toLowerCase()===
 window.addEventListener('keyup',e=>{keys[e.key]=false;if(e.key.toLowerCase()==='z')setJet(0,false);if(e.key.toLowerCase()==='x')setJet(1,false);keyTilt()});
 function keyTilt(){if(hasSensor)return;let x=0,y=1;if(keys.ArrowLeft)x-=1.2;if(keys.ArrowRight)x+=1.2;if(keys.ArrowUp)y-=1.6;if(keys.ArrowDown)y+=.8;target={x,y}}
 $('tilt').addEventListener('click',()=>{target={x:0,y:1};grav={x:0,y:1}});
-$('startBtn').addEventListener('click',()=>{$('start').classList.add('hidden');resetGame();enableSensor().then(ok=>{if(!ok&&/iPhone|iPad|iPod/.test(navigator.userAgent))$('hint').textContent='센서 없이 화면을 드래그해 기울이고, 물살 버튼을 길게 누르세요.'}).catch(()=>{});});
+$('startBtn').addEventListener('click',()=>{window.__ringGameStarted=true;$('sensorMsg').textContent='';$('start').classList.add('hidden');resetGame();enableSensor().then(ok=>{if(!ok&&/iPhone|iPad|iPod/.test(navigator.userAgent))$('hint').textContent='센서 없이 화면을 드래그해 기울이고, 물살 버튼을 길게 누르세요.'}).catch(()=>{});});
 $('retry').addEventListener('click',()=>{$('clear').classList.add('hidden');resetGame()});
 
 function step(dt){

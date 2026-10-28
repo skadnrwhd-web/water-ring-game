@@ -6,14 +6,14 @@
 <meta name="theme-color" content="#061b3a">
 <title>Water Ring Toss — Full 3D</title>
 <style>
-:root{color-scheme:dark;--cyan:#65e7ff;--gold:#ffe28a}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#031022;color:#f4fbff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
+:root{color-scheme:light;--cyan:#00bff5;--gold:#ffcb45}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#bcefff;color:#f4fbff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
 #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
 .ui{position:fixed;z-index:2;left:0;right:0;pointer-events:none}
 #top{top:0;padding:calc(env(safe-area-inset-top) + 12px) 14px 0;display:flex;justify-content:center}
 .hud{width:min(680px,100%);display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.metric{padding:10px 12px;border:1px solid #8eeaff38;border-radius:15px;background:linear-gradient(145deg,#092b4be8,#06182de8);box-shadow:0 8px 24px #0005,inset 0 1px #ffffff22;backdrop-filter:blur(12px);text-align:center}
+.metric{padding:10px 12px;border:1px solid #8eeaff38;border-radius:15px;background:linear-gradient(145deg,#087fc9f2,#07528eeF);box-shadow:0 8px 24px #0005,inset 0 1px #ffffff22;backdrop-filter:blur(12px);text-align:center}
 .metric small{display:block;color:#91cfe2;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
 .metric strong{display:block;font-size:clamp(17px,4vw,23px);color:#fff;margin-top:2px;font-variant-numeric:tabular-nums}
 .metric strong span{color:var(--gold)}
@@ -26,9 +26,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#031022;col
 #tilt{border:1px solid #a7eaff55;background:#08294bd9;color:#d8f7ff;border-radius:14px;padding:10px 12px;font-size:12px;font-weight:700;white-space:nowrap}
 #support{color:#93bdce;font-size:10px;text-decoration:none;pointer-events:auto;opacity:.7}
 #hint{position:fixed;z-index:2;bottom:112px;left:50%;transform:translateX(-50%);width:min(92vw,450px);text-align:center;color:#d7f5ff;font-size:12px;text-shadow:0 2px 6px #001;pointer-events:none}
-.overlay{position:fixed;z-index:5;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 35%,#06345ad9,#020916f2);backdrop-filter:blur(12px)}
+.overlay{position:fixed;z-index:5;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 35%,#c8f5fff2,#4ebbe8f5);backdrop-filter:blur(12px)}
 .overlay.hidden{display:none}
-.card{width:min(440px,100%);border:1px solid #8ceaff55;border-radius:28px;padding:28px 24px 24px;background:linear-gradient(145deg,#103c5bf2,#06172cf5);box-shadow:0 28px 90px #0009,inset 0 1px #fff3;text-align:center}
+.card{width:min(440px,100%);border:1px solid #8ceaff55;border-radius:28px;padding:28px 24px 24px;background:linear-gradient(145deg,#167fc8f7,#064477f7);box-shadow:0 28px 90px #0009,inset 0 1px #fff3;text-align:center}
 .eyebrow{color:var(--cyan);font-size:10px;letter-spacing:.24em;font-weight:900}
 h1{font-size:clamp(27px,7vw,40px);line-height:1.03;margin:12px 0 10px;letter-spacing:-.04em}
 p{font-size:14px;line-height:1.65;color:#c2e5f1;margin:8px 0}
@@ -39,6 +39,11 @@ p{font-size:14px;line-height:1.65;color:#c2e5f1;margin:8px 0}
 .note{font-size:11px;color:#85b8ca;margin-top:13px}
 #sensorMsg{min-height:14px;color:#ffdf8c;font-size:11px}
 @media(max-height:680px){.jet{height:60px}.metric{padding:7px}.controls{gap:10px}#hint{bottom:91px}.card{padding:22px 20px}}
+
+/* Mobile long-press fix: suppress iOS callout, selection and native gesture interference */
+button, a, #scene, .overlay, .card { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
+.jet { touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+body { -webkit-touch-callout:none; }
 </style>
 </head>
 <body>
@@ -90,24 +95,44 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.15;
+renderer.toneMappingExposure=1.55;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x03152a);
-scene.fog=new THREE.FogExp2(0x06345a,.025);
+scene.background=new THREE.Color(0x9deaff);
+scene.fog=new THREE.FogExp2(0x65d8ff,.008);
 const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);
 camera.position.set(0,4.7,17.8); camera.lookAt(0,4.0,0);
-scene.add(new THREE.HemisphereLight(0x9ceaff,0x102443,2.1));
-const keyLight=new THREE.DirectionalLight(0xffffff,3.4);keyLight.position.set(-5,10,8);keyLight.castShadow=true;keyLight.shadow.mapSize.set(1024,1024);scene.add(keyLight);
-const rimLight=new THREE.PointLight(0x24cfff,30,18);rimLight.position.set(4,6,-2);scene.add(rimLight);
-const fillLight=new THREE.PointLight(0xffbd65,12,15);fillLight.position.set(-4,2,4);scene.add(fillLight);
+scene.add(new THREE.HemisphereLight(0xd9faff,0x3d8bb1,3.2));
+const keyLight=new THREE.DirectionalLight(0xffffff,4.8);keyLight.position.set(-5,10,8);keyLight.castShadow=true;keyLight.shadow.mapSize.set(1024,1024);scene.add(keyLight);
+const rimLight=new THREE.PointLight(0x24cfff,42,18);rimLight.position.set(4,6,-2);scene.add(rimLight);
+const fillLight=new THREE.PointLight(0xffe2a1,22,15);fillLight.position.set(-4,2,4);scene.add(fillLight);
 
 const mat=(color,roughness=.3,metalness=.05,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
-const glass=new THREE.MeshPhysicalMaterial({color:0x6ddcff,transparent:true,opacity:.10,roughness:.08,metalness:.05,side:THREE.DoubleSide,depthWrite:false});
-const edgeGlass=new THREE.MeshPhysicalMaterial({color:0x9ceeff,transparent:true,opacity:.32,roughness:.12,metalness:.12});
-const blue=mat(0x0871b9,.24,.32), darkBlue=mat(0x052a50,.32,.22), sand=mat(0xe7c782,.92), rockMat=mat(0x617f92,.72), gold=mat(0xffd78a,.25,.55);
+const glass=new THREE.MeshPhysicalMaterial({color:0x9cecff,transparent:true,opacity:.055,roughness:.08,metalness:.05,side:THREE.DoubleSide,depthWrite:false});
+const edgeGlass=new THREE.MeshPhysicalMaterial({color:0x5ee5ff,transparent:true,opacity:.62,roughness:.12,metalness:.12});
+const blue=mat(0x078de0,.2,.24), darkBlue=mat(0x07528d,.28,.18), sand=mat(0xffdf9a,.92), rockMat=mat(0x617f92,.72), gold=mat(0xffd78a,.25,.55);
 const world={w:6.8,h:9.3,floor:.52,minX:-3.0,maxX:3.0,minY:.8,maxY:8.65};
 const tank=new THREE.Group();scene.add(tank);
+// Rounded aquarium silhouette inspired by the bright 3D concept render.
+// The tube rails make the curved top, bottom and front-facing corners read clearly.
+function roundedRail(parent,w,h,r,y,z,material,tube=.075){
+ const pts=[];
+ const corners=[ [w/2-r,h/2-r,0],[-w/2+r,h/2-r,90],[-w/2+r,-h/2+r,180],[w/2-r,-h/2+r,270] ];
+ // clockwise quarter arcs around the rectangle perimeter
+ const path=[];
+ const specs=[
+  {cx:w/2-r,cy:h/2-r,a0:0,a1:90},
+  {cx:-w/2+r,cy:h/2-r,a0:90,a1:180},
+  {cx:-w/2+r,cy:-h/2+r,a0:180,a1:270},
+  {cx:w/2-r,cy:-h/2+r,a0:270,a1:360}
+ ];
+ // Use rounded rectangle in X/Y plane; map Y to world height.
+ const points=[];
+ for(const s of specs)for(let i=0;i<=8;i++){const a=(s.a0+(s.a1-s.a0)*i/8)*Math.PI/180;points.push(new THREE.Vector3(s.cx+Math.cos(a)*r,y+s.cy+Math.sin(a)*r,z))}
+ const curve=new THREE.CatmullRomCurve3(points,true);
+ const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,128,tube,10,true),material);mesh.castShadow=true;parent.add(mesh);return mesh;
+}
+
 function box(parent,x,y,z,sx,sy,sz,material,opts={}){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function cylinder(parent,x,y,z,r1,r2,h,material,segments=24){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function sphere(parent,x,y,z,r,material,scale=[1,1,1]){const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),material);m.position.set(x,y,z);m.scale.set(...scale);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
@@ -122,6 +147,12 @@ box(tank,0,4.62,-1.57,6.9,8.95,.08,glass);
 box(tank,0,4.62,1.55,6.9,8.95,.08,glass);
 box(tank,0,.54,0,6.85,.14,3.0,sand);
 for(let i=0;i<11;i++){const x=-3.1+i*.62;const peb=sphere(tank,x,.65,(i%3-1)*.72,.09,mat(i%2?0xc7a76a:0xf5dda0,.9));peb.scale.set(1,.35,.8)}
+// Bright rounded outline rails: the distinctive curved aquarium rim and base.
+const rimMaterial=new THREE.MeshStandardMaterial({color:0x5be5ff,metalness:.38,roughness:.18,emissive:0x087eae,emissiveIntensity:.35});
+roundedRail(tank,7.12,8.95,.48,4.62,1.62,rimMaterial,.085);
+roundedRail(tank,7.12,8.95,.48,4.62,-1.62,rimMaterial,.055);
+roundedRail(tank,7.22,.52,.22,.36,0,mat(0x21bfff,.22,.3),.11);
+roundedRail(tank,7.18,.48,.22,8.98,0,mat(0x39cfff,.18,.32),.12);
 // Inner seams and reflective vertical rails
 for(const x of [-3.39,3.39]){cylinder(tank,x,4.6,1.36,.045,.045,8.9,edgeGlass,12)}
 // Floating light shafts
@@ -172,6 +203,9 @@ function resetGame(){for(const p of pegs)p.hooks=[];for(let i=0;i<rings.length;i
 function setJet(i,on){jets[i].pressed=on;$('btn'+(i?'R':'L')).classList.toggle('down',on);if(on&&state==='play'&&!started){started=true;t0=performance.now()}}
 function bindJet(btn,i){btn.addEventListener('pointerdown',e=>{e.preventDefault();btn.setPointerCapture?.(e.pointerId);setJet(i,true)});['pointerup','pointercancel','lostpointercapture'].forEach(n=>btn.addEventListener(n,()=>setJet(i,false)))}
 bindJet($('btnL'),0);bindJet($('btnR'),1);
+// Prevent long-press magnifier / text-selection callout on mobile browsers.
+document.addEventListener('contextmenu',e=>{if(e.target.closest('.jet')||e.target===canvas)e.preventDefault()});
+document.addEventListener('selectstart',e=>e.preventDefault());
 function motion(e){const a=e.accelerationIncludingGravity;if(!a||a.x==null||a.y==null)return;hasSensor=true;const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);let x=(ios?1:-1)*a.x/9.81,y=(ios?-1:1)*a.y/9.81;const m=Math.hypot(x,y);if(m>2.5){x*=2.5/m;y*=2.5/m}target={x,y}}
 async function enableSensor(){try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){if(await DeviceMotionEvent.requestPermission()!=='granted')return false}window.addEventListener('devicemotion',motion);return true}catch{return false}}
 canvas.addEventListener('pointerdown',e=>{dragging=true;drag(e)});canvas.addEventListener('pointermove',e=>{if(dragging)drag(e)});['pointerup','pointercancel','pointerleave'].forEach(n=>canvas.addEventListener(n,()=>{dragging=false;if(!hasSensor)target={x:0,y:1}}));

@@ -492,21 +492,67 @@ function drawFish(x, y, rx, ry, col, dir) {
 }
 
 /* 자유롭게 떠다니는 고리 (정면에서 본 모습) */
-function drawRing(x, y, col) {
-  ctx.save(); ctx.translate(x, y);
-  // 그림자
-  ctx.beginPath(); ctx.arc(2.5, 3.5, RING_R, 0, 7);
-  ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(0,30,90,.32)'; ctx.stroke();
-  // 몸통
-  const g = ctx.createLinearGradient(-RING_R, -RING_R, RING_R, RING_R);
-  g.addColorStop(0, col.l); g.addColorStop(.45, col.c); g.addColorStop(1, col.d);
-  ctx.beginPath(); ctx.arc(0, 0, RING_R, 0, Math.PI * 2);
-  ctx.lineWidth = 7; ctx.strokeStyle = g; ctx.stroke();
-  // 안쪽 어두운 선, 바깥 반사광
-  ctx.beginPath(); ctx.arc(0, 0, RING_R - 3.2, 0, 7);
-  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, RING_R + 1.2, Math.PI * 1.08, Math.PI * 1.52);
-  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.stroke();
+function drawRing(x, y, col, vx = 0, vy = 0, t = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // 속도에 따라 기울고, 떠다니는 동안 천천히 흔들리는 입체 고리
+  const spin = Math.sin(t * 3.1 + x * 0.035) * 0.22 + Math.max(-0.28, Math.min(0.28, vx * 0.0018));
+  const tilt = 0.42 + Math.min(0.28, Math.abs(vy) * 0.0015);
+  const rx = RING_R;
+  const ry = RING_R * tilt;
+
+  ctx.rotate(spin);
+
+  // 수조 안쪽에 비치는 부드러운 그림자
+  ctx.beginPath();
+  ctx.ellipse(2.5, 5, rx * 1.04, ry * 1.12, 0, 0, Math.PI * 2);
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = 'rgba(0,18,62,.32)';
+  ctx.stroke();
+
+  // 고리의 어두운 아랫면: 플라스틱 두께 표현
+  ctx.beginPath();
+  ctx.ellipse(0, 1.8, rx, ry, 0, 0, Math.PI * 2);
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = col.d;
+  ctx.stroke();
+
+  // 둥근 플라스틱 몸통의 입체 그라디언트
+  const g = ctx.createLinearGradient(-rx, -ry - 5, rx, ry + 5);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.12, col.l);
+  g.addColorStop(0.36, col.c);
+  g.addColorStop(0.68, col.d);
+  g.addColorStop(0.86, col.c);
+  g.addColorStop(1, col.l);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = g;
+  ctx.stroke();
+
+  // 안쪽 테두리의 음영으로 구멍과 두께 강조
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx - 4.2, Math.max(1.5, ry - 2.4), 0, 0, Math.PI * 2);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(5,24,64,.55)';
+  ctx.stroke();
+
+  // 윗면 반사광
+  ctx.beginPath();
+  ctx.ellipse(-1, -1.2, rx * 0.82, ry * 0.68, 0, Math.PI * 1.08, Math.PI * 1.78);
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(255,255,255,.92)';
+  ctx.stroke();
+
+  // 작은 하이라이트 점
+  ctx.beginPath();
+  ctx.ellipse(-rx * 0.52, -ry * 0.45, 2.2, 1.2, -0.35, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  ctx.fill();
+
   ctx.restore();
 }
 
@@ -620,7 +666,7 @@ function render(t) {
   }
 
   // 떠다니는 고리
-  for (const r of rings) if (!r.hook) drawRing(r.x, r.y, r.col);
+  for (const r of rings) if (!r.hook) drawRing(r.x, r.y, r.col, r.vx, r.vy, t);
 
   // 거품
   for (const b of bubbles) {

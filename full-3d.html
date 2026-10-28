@@ -138,8 +138,8 @@ const rimLight=new THREE.PointLight(0x24cfff,42,18);rimLight.position.set(4,6,-2
 const fillLight=new THREE.PointLight(0xffe2a1,22,15);fillLight.position.set(-4,2,4);scene.add(fillLight);
 
 const mat=(color,roughness=.3,metalness=.05,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
-const glass=new THREE.MeshPhysicalMaterial({color:0xd8f8ff,transparent:true,opacity:.12,roughness:.035,metalness:.02,side:THREE.DoubleSide,depthWrite:false,clearcoat:1,clearcoatRoughness:.03});
-const edgeGlass=new THREE.MeshPhysicalMaterial({color:0xc8f5ff,transparent:true,opacity:.30,roughness:.045,metalness:.08,side:THREE.DoubleSide,depthWrite:false,clearcoat:1,clearcoatRoughness:.025});
+const glass=new THREE.MeshPhysicalMaterial({color:0xe8fcff,transparent:true,opacity:.065,roughness:.018,metalness:.01,side:THREE.DoubleSide,depthWrite:false,clearcoat:1,clearcoatRoughness:.015});
+const edgeGlass=new THREE.MeshPhysicalMaterial({color:0xd8faff,transparent:true,opacity:.22,roughness:.025,metalness:.04,side:THREE.DoubleSide,depthWrite:false,clearcoat:1,clearcoatRoughness:.012});
 const blue=mat(0x7bbbd0,.18,.28), darkBlue=mat(0x17465c,.22,.22), sand=mat(0xffdf9a,.92), rockMat=mat(0x617f92,.72), gold=mat(0xffd78a,.25,.55);
 const world={w:6.8,h:9.3,floor:.52,minX:-3.0,maxX:3.0,minY:.8,maxY:8.65};
 const tank=new THREE.Group();scene.add(tank);
@@ -185,6 +185,11 @@ roundedRail(tank,7.12,.34,.18,.30,0,mat(0x79b9cc,.2,.38),.055);
 roundedRail(tank,7.12,.30,.18,8.99,0,rimMaterial,.045);
 // Narrow reflective vertical seams at the acrylic corners
 for(const x of [-3.43,3.43]){cylinder(tank,x,4.6,1.43,.022,.022,8.9,edgeGlass,12)}
+// Animated acrylic highlights and subtle concentric water ripples.
+const reflectionStreaks=[];
+for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(.055,5.8+i*.45),new THREE.MeshBasicMaterial({color:0xe8fdff,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false}));m.position.set(-3.12+i*2.05,4.8,1.635);m.rotation.z=-.10;tank.add(m);reflectionStreaks.push(m)}
+const rippleRings=[];
+for(let i=0;i<5;i++){const m=new THREE.Mesh(new THREE.TorusGeometry(1,.012,6,96),new THREE.MeshBasicMaterial({color:i%2?0x8beaff:0xe5fcff,transparent:true,opacity:.22,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(i%2?-.8:.85,.70+i*.003,(i-2)*.28);m.scale.set(.35,.35,1);tank.add(m);rippleRings.push({mesh:m,phase:i*1.25})}
 // Floating light shafts
 const rayMat=new THREE.MeshBasicMaterial({color:0x8ceeff,transparent:true,opacity:.055,side:THREE.DoubleSide,depthWrite:false});
 for(let i=0;i<5;i++){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.8+i*1.35,8.9,-1.25),new THREE.Vector3(-2.35+i*1.35,8.9,-1.25),new THREE.Vector3(-.8+i*1.35,.8,-1.25),new THREE.Vector3(-1.6+i*1.35,.8,-1.25)]);g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();scene.add(new THREE.Mesh(g,rayMat))}
@@ -275,6 +280,8 @@ let last=performance.now();
 function animate(now){requestAnimationFrame(animate);let dt=Math.min((now-last)/1000,.033);last=now;grav.x+=(target.x-grav.x)*.09;grav.y+=(target.y-grav.y)*.09;
  if(state==='play'){for(let i=0;i<3;i++)step(dt/3);if(started)elapsed=(now-t0)/1000;$('time').textContent=elapsed.toFixed(1);const n=rings.filter(r=>r.hook).length;$('count').textContent=n;if(n===6)onClear()}
  const t=now/1000;
+ reflectionStreaks.forEach((s,i)=>{s.material.opacity=.10+.12*(.5+.5*Math.sin(t*.8+i*1.7));s.position.x=-3.12+i*2.05+Math.sin(t*.22+i)*.08});
+ rippleRings.forEach(({mesh,phase})=>{const p=((t*.22+phase*.13)%1);const scale=.25+p*1.15;mesh.scale.set(scale,scale,1);mesh.material.opacity=(1-p)*.24;mesh.position.x=Math.sin(t*.7+phase)*.45;mesh.position.z=Math.cos(t*.55+phase)*.38});
  jets.forEach((j,i)=>{j.nozzle.material.emissive?.setHex(j.pressed?0x153b55:0x000000);j.particles.forEach((p,k)=>{p.visible=j.pressed;if(j.pressed){p.position.y=1.1+((t*(2.0+k%5*.35)+k*.31)%6.1);p.position.x=j.x+Math.sin(t*4+k)*(.05+p.position.y*.025);p.position.z=.1+Math.cos(t*3+k)*.13;p.material.opacity=.25+Math.sin(t*8+k)*.18}})});
  bubbles.forEach(b=>{b.position.y+=b.userData.speed*dt;if(b.position.y>9)b.position.y=.8;b.position.x+=Math.sin(t+b.userData.phase)*dt*.05});
  decoFish.forEach(f=>{f.position.x+=f.userData.speed*dt;if(f.position.x>3.3)f.position.x=-3.3;if(f.position.x< -3.3)f.position.x=3.3;f.position.y+=Math.sin(t*1.6+f.userData.phase)*dt*.15;f.rotation.y=f.userData.speed>0?0:Math.PI});

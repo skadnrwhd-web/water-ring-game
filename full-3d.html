@@ -233,7 +233,7 @@ let state='ready',started=false,t0=0,elapsed=0,best=null,hasSensor=false,draggin
 let grav={x:0,y:1},target={x:0,y:1},keys={};
 try{const b=localStorage.getItem('ringToss.best');if(b)best=parseFloat(b)}catch{}
 $('best').textContent=best?best.toFixed(1):'--';
-const GRAV=7.4,DRAG=2.6,JET=19.5,MAX_HOOKS=3;
+const GRAV=7.4,DRAG=2.35,JET=22,MAX_HOOKS=3;
 function resetGame(){for(const p of pegs)p.hooks=[];for(let i=0;i<rings.length;i++){const r=rings[i];r.x=-2.45+i*.98+(Math.random()-.5)*.12;r.y=1.22+(i%2)*.28;r.z=.3+(Math.random()-.5)*.7;r.vx=r.vy=r.vz=0;r.hook=null;r.slot=0;r.rx=Math.random()*2;r.ry=Math.random()*2;r.rz=Math.random()*6;r.mesh.position.set(r.x,r.y,r.z);r.mesh.rotation.set(r.rx,r.ry,r.rz);r.mesh.visible=true}started=false;elapsed=0;$('time').textContent='0.0';$('count').textContent='0';state='play';}
 function setJet(i,on){jets[i].pressed=on;$('btn'+(i?'R':'L')).classList.toggle('down',on);if(on&&state==='play'&&!started){started=true;t0=performance.now()}}
 function bindJet(btn,i){btn.addEventListener('pointerdown',e=>{e.preventDefault();btn.setPointerCapture?.(e.pointerId);setJet(i,true)});['pointerup','pointercancel','lostpointercapture'].forEach(n=>btn.addEventListener(n,()=>setJet(i,false)))}
@@ -268,7 +268,7 @@ function step(dt){
   for(const k of rocks){const dx=r.x-k.x,dy=r.y-k.y,dz=(r.z-k.z),dist=Math.hypot(dx,dy,dz),min=k.r+.25;if(dist<min&&dist>.001){const nx=dx/dist,ny=dy/dist,nz=dz/dist;r.x=k.x+nx*min;r.y=k.y+ny*min;r.z=k.z+nz*min;const vn=r.vx*nx+r.vy*ny+r.vz*nz;if(vn<0){r.vx-=1.5*vn*nx;r.vy-=1.5*vn*ny;r.vz-=1.5*vn*nz}}}
  }
  for(let i=0;i<rings.length;i++)for(let j=i+1;j<rings.length;j++){const a=rings[i],b=rings[j];if(a.hook||b.hook)continue;const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,dist=Math.hypot(dx,dy,dz),min=.5;if(dist<min&&dist>.001){const nx=dx/dist,ny=dy/dist,nz=dz/dist,push=(min-dist)/2;a.x-=nx*push;a.y-=ny*push;a.z-=nz*push;b.x+=nx*push;b.y+=ny*push;b.z+=nz*push;const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny+(b.vz-a.vz)*nz;if(rv<0){const imp=-rv*.6;a.vx-=imp*nx;a.vy-=imp*ny;a.vz-=imp*nz;b.vx+=imp*nx;b.vy+=imp*ny;b.vz+=imp*nz}}}
- for(const r of rings){if(r.hook)continue;for(const p of pegs){if(p.hooks.length>=MAX_HOOKS)continue;if(Math.abs(r.x-p.x)<.18&&Math.abs(r.y-p.y)<.24&&Math.abs(r.z)<.72){r.hook=p;r.slot=p.hooks.length;p.hooks.push(r);r.vx*=.3;r.vy*=.3;for(let n=0;n<8;n++){const b=bubbles[Math.floor(Math.random()*bubbles.length)];b.position.set(p.x+(Math.random()-.5)*.4,p.y+(Math.random()-.5)*.4,.3)}break}}}
+ for(const r of rings){if(r.hook)continue;for(const p of pegs){if(p.hooks.length>=MAX_HOOKS)continue;if(Math.abs(r.x-p.x)<.34&&Math.abs(r.y-(p.y+.02))<.42&&Math.abs(r.z)<.95){r.hook=p;r.slot=p.hooks.length;p.hooks.push(r);r.vx*=.3;r.vy*=.3;r.vz=0;for(let n=0;n<8;n++){const b=bubbles[Math.floor(Math.random()*bubbles.length)];b.position.set(p.x+(Math.random()-.5)*.4,p.y+(Math.random()-.5)*.4,.3)}break}}}
  for(const r of rings){r.mesh.position.set(r.x,r.y,r.z);r.mesh.rotation.set(r.rx,r.ry,r.rz)}
 }
 function onClear(){state='clear';const t=elapsed;let msg;if(!best||t<best){best=t;try{localStorage.setItem('ringToss.best',String(t))}catch{}msg='새로운 최고 기록입니다!'}else msg='최고 기록: '+best.toFixed(1)+'초';$('best').textContent=best.toFixed(1);$('clearTime').textContent=t.toFixed(1)+'s';$('clearBest').textContent=msg;setTimeout(()=>$('clear').classList.remove('hidden'),800)}

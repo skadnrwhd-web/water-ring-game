@@ -65,8 +65,21 @@ p{font-size:14px;line-height:1.65;color:#c2e5f1;margin:8px 0}
 <div class="overlay hidden" id="clear">
  <div class="card"><div class="eyebrow">ALL RINGS HOOKED</div><h1>완벽해요!</h1><p>6개의 고리를 모두 걸었습니다.</p><h1 style="color:#ffe28a" id="clearTime">0.0s</h1><p id="clearBest"></p><button class="primary" id="retry">다시 플레이</button></div>
 </div>
+<script>
+window.__ringGameStarted = false;
+window.addEventListener('error', function(e) {
+  const msg = document.getElementById('sensorMsg');
+  if (msg) msg.textContent = '게임 초기화 오류: ' + (e.message || '3D 엔진 오류');
+  const btn = document.getElementById('startBtn');
+  if (btn) { btn.textContent = '오류 발생 — 새로고침'; btn.onclick = function(){ location.reload(); }; }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const msg = document.getElementById('sensorMsg');
+  if (msg) msg.textContent = '3D 라이브러리 로딩 실패. 페이지를 새로고침해 주세요.';
+});
+</script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
 const $=id=>document.getElementById(id);
 const canvas=$('scene');

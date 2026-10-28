@@ -114,8 +114,22 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.55;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x9deaff);
-scene.fog=new THREE.FogExp2(0x65d8ff,.008);
+// Retro handheld-toy backdrop: midnight blue gradient, soft cyan halo, subtle arcade grid and stars.
+const bgCanvas=document.createElement('canvas'); bgCanvas.width=1024; bgCanvas.height=1536;
+const bgCtx=bgCanvas.getContext('2d');
+const bgGrad=bgCtx.createLinearGradient(0,0,1024,1536);
+bgGrad.addColorStop(0,'#06152e'); bgGrad.addColorStop(.48,'#123e69'); bgGrad.addColorStop(1,'#07172f');
+bgCtx.fillStyle=bgGrad; bgCtx.fillRect(0,0,1024,1536);
+const halo=bgCtx.createRadialGradient(512,600,40,512,600,650);
+halo.addColorStop(0,'rgba(71,220,255,.42)'); halo.addColorStop(.55,'rgba(28,142,210,.14)'); halo.addColorStop(1,'rgba(0,12,36,0)');
+bgCtx.fillStyle=halo; bgCtx.fillRect(0,0,1024,1536);
+bgCtx.strokeStyle='rgba(112,225,255,.075)'; bgCtx.lineWidth=2;
+for(let y=120;y<1536;y+=72){bgCtx.beginPath();bgCtx.moveTo(0,y);bgCtx.lineTo(1024,y);bgCtx.stroke()}
+for(let x=40;x<1024;x+=72){bgCtx.beginPath();bgCtx.moveTo(x,0);bgCtx.lineTo(x,1536);bgCtx.stroke()}
+for(let i=0;i<95;i++){const x=(i*197)%1024,y=(i*313)%1536,r=(i%3)+1;bgCtx.beginPath();bgCtx.arc(x,y,r,0,Math.PI*2);bgCtx.fillStyle=i%4===0?'rgba(255,211,107,.7)':'rgba(178,244,255,.55)';bgCtx.fill()}
+const bgTexture=new THREE.CanvasTexture(bgCanvas); bgTexture.colorSpace=THREE.SRGBColorSpace;
+scene.background=bgTexture;
+scene.fog=new THREE.FogExp2(0x123e69,.003);
 const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);
 camera.position.set(0,4.7,17.8); camera.lookAt(0,4.0,0);
 scene.add(new THREE.HemisphereLight(0xd9faff,0x3d8bb1,3.2));

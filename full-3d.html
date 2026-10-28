@@ -72,6 +72,20 @@ body { -webkit-touch-callout:none; }
 </div>
 <script>
 window.__ringGameStarted = false;
+document.addEventListener('DOMContentLoaded', function () {
+  const btn = document.getElementById('startBtn');
+  const msg = document.getElementById('sensorMsg');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    window.setTimeout(function () {
+      if (!window.__ringGameStarted && !document.getElementById('start').classList.contains('hidden')) {
+        if (msg) msg.textContent = '게임 코드가 실행되지 않았습니다. 페이지 배포 또는 3D 엔진 로딩 문제입니다.';
+        btn.textContent = '게임 로딩 실패';
+      }
+    }, 1800);
+  }, true);
+});
+
 window.addEventListener('error', function(e) {
   const msg = document.getElementById('sensorMsg');
   if (msg) msg.textContent = '게임 초기화 오류: ' + (e.message || '3D 엔진 오류');
